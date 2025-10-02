@@ -1,0 +1,208 @@
+package cmd
+
+import (
+	"testing"
+	"time"
+
+	"github.com/charmbracelet/bubbles/stopwatch"
+)
+
+func TestKoreanResultsCalculation(t *testing.T) {
+	// Test Korean timer-based test results calculation
+	t.Run("KoreanTimerBasedTest results calculation", func(t *testing.T) {
+		// Create a mock Korean timer-based test
+		settings := KoreanTimerBasedTestSettings{
+			TimerBasedTestSettings: TimerBasedTestSettings{
+				wordListSelections: []WordsSelection{{name: "Korean Common Words"}},
+				wordListCursor:     0,
+			},
+			language: "korean",
+		}
+
+		test := KoreanTimerBasedTest{
+			settings: settings,
+			timer: myTimer{
+				duration: 1 * time.Minute,
+			},
+			base: TestBase{
+				inputBuffer:   []rune("안녕하세요"),
+				wordsToEnter:  []rune("안녕하세요"),
+				rawInputCnt:   5,
+				wpmEachSecond: []float64{10.0, 12.0, 15.0},
+				mistakes: mistakes{
+					mistakesAt:     make(map[int]bool),
+					rawMistakesCnt: 0,
+				},
+			},
+		}
+
+		results := test.calculateKoreanResults()
+
+		// Verify results structure
+		if results.identifier.testType != "KoreanTimerBasedTest" {
+			t.Errorf("Expected test type 'KoreanTimerBasedTest', got %s", results.identifier.testType)
+		}
+
+		if results.wordList != "Korean Common Words" {
+			t.Errorf("Expected word list 'Korean Common Words', got %s", results.wordList)
+		}
+
+		if results.accuracy != 100.0 {
+			t.Errorf("Expected accuracy 100.0, got %.1f", results.accuracy)
+		}
+
+		if results.wpm <= 0 {
+			t.Errorf("Expected positive WPM, got %d", results.wpm)
+		}
+	})
+
+	// Test Korean word count-based test results calculation
+	t.Run("KoreanWordCountBasedTest results calculation", func(t *testing.T) {
+		settings := KoreanWordCountBasedTestSettings{
+			WordCountBasedTestSettings: WordCountBasedTestSettings{
+				wordCountSelections: []int{10},
+				wordCountCursor:     0,
+				wordListSelections:  []WordsSelection{{name: "Korean Tech Terms"}},
+				wordListCursor:      0,
+			},
+			language: "korean",
+		}
+
+		test := KoreanWordCountBasedTest{
+			settings: settings,
+			stopwatch: myStopWatch{
+				stopwatch: stopwatch.NewWithInterval(time.Second),
+			},
+			base: TestBase{
+				inputBuffer:   []rune("프로그래밍 데이터베이스"),
+				wordsToEnter:  []rune("프로그래밍 데이터베이스"),
+				rawInputCnt:   11,
+				wpmEachSecond: []float64{15.0, 18.0, 20.0},
+				mistakes: mistakes{
+					mistakesAt:     make(map[int]bool),
+					rawMistakesCnt: 0,
+				},
+			},
+		}
+
+		results := test.calculateKoreanResults()
+
+		// Verify results structure
+		if results.identifier.testType != "KoreanWordCountBasedTest" {
+			t.Errorf("Expected test type 'KoreanWordCountBasedTest', got %s", results.identifier.testType)
+		}
+
+		if results.wordList != "Korean Tech Terms" {
+			t.Errorf("Expected word list 'Korean Tech Terms', got %s", results.wordList)
+		}
+
+		if results.accuracy != 100.0 {
+			t.Errorf("Expected accuracy 100.0, got %.1f", results.accuracy)
+		}
+	})
+
+	// Test Korean sentence count-based test results calculation
+	t.Run("KoreanSentenceCountBasedTest results calculation", func(t *testing.T) {
+		settings := KoreanSentenceCountBasedTestSettings{
+			SentenceCountBasedTestSettings: SentenceCountBasedTestSettings{
+				sentenceCountSelections: []int{5},
+				sentenceCountCursor:     0,
+				sentenceListSelections:  []WordsSelection{{name: "Korean Sentences"}},
+				sentenceListCursor:      0,
+			},
+			language: "korean",
+		}
+
+		test := KoreanSentenceCountBasedTest{
+			settings: settings,
+			stopwatch: myStopWatch{
+				stopwatch: stopwatch.NewWithInterval(time.Second),
+			},
+			base: TestBase{
+				inputBuffer:   []rune("안녕하세요. 반갑습니다."),
+				wordsToEnter:  []rune("안녕하세요. 반갑습니다."),
+				rawInputCnt:   12,
+				wpmEachSecond: []float64{12.0, 14.0, 16.0},
+				mistakes: mistakes{
+					mistakesAt:     make(map[int]bool),
+					rawMistakesCnt: 0,
+				},
+			},
+		}
+
+		results := test.calculateKoreanResults()
+
+		// Verify results structure
+		if results.identifier.testType != "KoreanSentenceCountBasedTest" {
+			t.Errorf("Expected test type 'KoreanSentenceCountBasedTest', got %s", results.identifier.testType)
+		}
+
+		if results.wordList != "Korean Sentences" {
+			t.Errorf("Expected word list 'Korean Sentences', got %s", results.wordList)
+		}
+
+		if results.accuracy != 100.0 {
+			t.Errorf("Expected accuracy 100.0, got %.1f", results.accuracy)
+		}
+	})
+}
+
+func TestKoreanWPMCalculationIntegration(t *testing.T) {
+	base := TestBase{
+		inputBuffer: []rune("안녕하세요프로그래밍"),
+		rawInputCnt: 10,
+		mistakes: mistakes{
+			mistakesAt:     make(map[int]bool),
+			rawMistakesCnt: 0,
+		},
+	}
+
+	// Test Korean WPM calculation
+	elapsedMinutes := 1.0
+	wpm := base.calculateKoreanNormalizedWpm(elapsedMinutes)
+
+	if wpm <= 0 {
+		t.Errorf("Expected positive Korean WPM, got %.2f", wpm)
+	}
+
+	// Korean WPM should be different from regular WPM due to character complexity adjustment
+	regularWpm := base.calculateNormalizedWpm(elapsedMinutes)
+	if wpm == regularWpm {
+		t.Errorf("Korean WPM (%.2f) should be different from regular WPM (%.2f)", wpm, regularWpm)
+	}
+}
+
+func TestKoreanAccuracyCalculationIntegration(t *testing.T) {
+	// Test perfect accuracy
+	base := TestBase{
+		inputBuffer:  []rune("안녕하세요"),
+		wordsToEnter: []rune("안녕하세요"),
+		rawInputCnt:  5,
+		mistakes: mistakes{
+			mistakesAt:     make(map[int]bool),
+			rawMistakesCnt: 0,
+		},
+	}
+
+	accuracy := base.calculateKoreanAccuracy()
+	if accuracy != 100.0 {
+		t.Errorf("Expected 100%% accuracy for perfect input, got %.1f%%", accuracy)
+	}
+
+	// Test with mistakes
+	baseWithMistakes := TestBase{
+		inputBuffer:  []rune("안녕하세여"), // 요 -> 여 (mistake)
+		wordsToEnter: []rune("안녕하세요"),
+		rawInputCnt:  5,
+		mistakes: mistakes{
+			mistakesAt:     map[int]bool{4: true}, // mistake at position 4
+			rawMistakesCnt: 1,
+		},
+	}
+
+	accuracyWithMistakes := baseWithMistakes.calculateKoreanAccuracy()
+	if accuracyWithMistakes >= 100.0 {
+		t.Errorf("Expected accuracy less than 100%% with mistakes, got %.1f%%", accuracyWithMistakes)
+	}
+}
+

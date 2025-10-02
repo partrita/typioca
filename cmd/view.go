@@ -270,6 +270,63 @@ func (m model) View() string {
 		fullParagraph := lipgloss.JoinVertical(lipgloss.Center, resultsStyle.Padding(1).Render(wpm), wpmsPlot, resultsStyle.Padding(0).Render(miscStatsLine1), resultsStyle.Render(miscStatsLine2))
 		s = lipgloss.Place(termWidth, termHeight, lipgloss.Center, lipgloss.Center, fullParagraph)
 
+	case KoreanTimerBasedTestResults:
+		rawWpmShow := "raw: " + style(strconv.Itoa(state.results.rawWpm), m.styles.greener)
+		wpm := "wpm: " + style(strconv.Itoa(state.results.wpm), m.styles.runningTimer)
+		deltaWpm := "Δavg: " + style(fmt.Sprintf("%s%.2f%%", plusIfPositive(state.results.deltaWpm), math.Min(state.results.deltaWpm, 100.0)), m.styles.greener)
+		givenTime := "time: " + style(state.results.time.String(), m.styles.greener)
+		accuracy := "accuracy: " + style(fmt.Sprintf("%.1f", state.results.accuracy), m.styles.greener)
+		words := "words: " + style(state.results.wordList, m.styles.greener)
+
+		miscStatsLine1 := fmt.Sprintf("%s %s %s %s", accuracy, deltaWpm, rawWpmShow, givenTime)
+		miscStatsLine2 := words
+
+		miscStatsLine1Len := len(dropAnsiCodes(miscStatsLine1))
+		plotData := append(state.wpmEachSecond, float64(state.results.wpm))
+		wpmsPlot := plotWpms(plotData, miscStatsLine1Len-2)
+
+		fullParagraph := lipgloss.JoinVertical(lipgloss.Center, resultsStyle.Padding(1).Render(wpm), wpmsPlot, resultsStyle.Padding(0).Render(miscStatsLine1), resultsStyle.Render(miscStatsLine2))
+		s = lipgloss.Place(termWidth, termHeight, lipgloss.Center, lipgloss.Center, fullParagraph)
+
+	case KoreanWordCountTestResults:
+		rawWpmShow := "raw: " + style(strconv.Itoa(state.results.rawWpm), m.styles.greener)
+		wpm := "wpm: " + style(strconv.Itoa(state.results.wpm), m.styles.runningTimer)
+		deltaWpm := "Δavg: " + style(fmt.Sprintf("%s%.2f%%", plusIfPositive(state.results.deltaWpm), math.Min(state.results.deltaWpm, 100.0)), m.styles.greener)
+		givenTime := "time: " + style(state.results.time.String(), m.styles.greener)
+		wordCnt := "cnt: " + style(strconv.Itoa(state.wordCnt), m.styles.greener)
+		accuracy := "accuracy: " + style(fmt.Sprintf("%.1f", state.results.accuracy), m.styles.greener)
+		words := "words: " + style(state.results.wordList, m.styles.greener)
+
+		miscStatsLine1 := fmt.Sprintf("%s %s %s %s", accuracy, deltaWpm, rawWpmShow, givenTime)
+		miscStatsLine2 := wordCnt + " " + words
+
+		miscStatsLine1Len := len(dropAnsiCodes(miscStatsLine1))
+
+		plotData := append(state.wpmEachSecond, float64(state.results.wpm))
+		wpmsPlot := plotWpms(plotData, miscStatsLine1Len-2)
+
+		fullParagraph := lipgloss.JoinVertical(lipgloss.Center, resultsStyle.Padding(1).Render(wpm), wpmsPlot, resultsStyle.Padding(0).Render(miscStatsLine1), resultsStyle.Render(miscStatsLine2))
+		s = lipgloss.Place(termWidth, termHeight, lipgloss.Center, lipgloss.Center, fullParagraph)
+
+	case KoreanSentenceCountTestResults:
+		rawWpmShow := "raw: " + style(strconv.Itoa(state.results.rawWpm), m.styles.greener)
+		wpm := "wpm: " + style(strconv.Itoa(state.results.wpm), m.styles.runningTimer)
+		deltaWpm := "Δavg: " + style(fmt.Sprintf("%s%.2f%%", plusIfPositive(state.results.deltaWpm), math.Min(state.results.deltaWpm, 100.0)), m.styles.greener)
+		givenTime := "time: " + style(state.results.time.String(), m.styles.greener)
+		sentenceCnt := "cnt: " + style(strconv.Itoa(state.sentenceCnt), m.styles.greener)
+		accuracy := "accuracy: " + style(fmt.Sprintf("%.1f", state.results.accuracy), m.styles.greener)
+		words := "sentences: " + style(state.results.wordList, m.styles.greener)
+
+		miscStatsLine1 := fmt.Sprintf("%s %s %s %s", accuracy, deltaWpm, rawWpmShow, givenTime)
+		miscStatsLine2 := sentenceCnt + " " + words
+
+		miscStatsLine1Len := len(dropAnsiCodes(miscStatsLine1))
+		plotData := append(state.wpmEachSecond, float64(state.results.wpm))
+		wpmsPlot := plotWpms(plotData, miscStatsLine1Len-2)
+
+		fullParagraph := lipgloss.JoinVertical(lipgloss.Center, resultsStyle.Padding(1).Render(wpm), wpmsPlot, resultsStyle.Padding(0).Render(miscStatsLine1), resultsStyle.Render(miscStatsLine2))
+		s = lipgloss.Place(termWidth, termHeight, lipgloss.Center, lipgloss.Center, fullParagraph)
+
 	case TimerBasedTest:
 		var coloredTimer string
 		if state.timer.isRunning {
@@ -321,6 +378,81 @@ func (m model) View() string {
 		}
 
 	case SentenceCountBasedTest:
+		var coloredStopwatch string
+		if state.stopwatch.isRunning {
+			coloredStopwatch = style(state.stopwatch.stopwatch.View(), m.styles.runningTimer)
+		} else {
+			coloredStopwatch = style(state.stopwatch.stopwatch.View(), m.styles.stoppedTimer)
+		}
+
+		paragraphView := state.base.paragraphView(lineLenLimit, m.styles)
+		lines := strings.Split(paragraphView, "\n")
+		cursorLine := findCursorLine(lines, state.base.cursor)
+
+		linesAroundCursor := strings.Join(getLinesAroundCursor(lines, cursorLine), "\n")
+
+		avgLineLen := averageLineLen(lines)
+		indentBy := uint(math.Max(0, float64(termWidth/2-avgLineLen/2)))
+
+		s += positionVerticaly(termHeight)
+		s += m.indent(coloredStopwatch, indentBy) + "\n\n" + m.indent(linesAroundCursor, indentBy)
+
+		if !state.stopwatch.isRunning {
+			s += "\n\n\n"
+			s += lipgloss.PlaceHorizontal(termWidth, lipgloss.Center, style("ctrl+r to restart, ctrl+q to menu", m.styles.toEnter))
+		}
+
+	case KoreanTimerBasedTest:
+		var coloredTimer string
+		if state.timer.isRunning {
+			coloredTimer = style(state.timer.timer.View(), m.styles.runningTimer)
+		} else {
+			coloredTimer = style(state.timer.timer.View(), m.styles.stoppedTimer)
+		}
+
+		paragraphView := state.base.paragraphView(lineLenLimit, m.styles)
+		lines := strings.Split(paragraphView, "\n")
+		cursorLine := findCursorLine(lines, state.base.cursor)
+
+		linesAroundCursor := strings.Join(getLinesAroundCursor(lines, cursorLine), "\n")
+
+		s += positionVerticaly(termHeight)
+		avgLineLen := averageLineLen(lines)
+		indentBy := uint(math.Max(0, float64(termWidth/2-avgLineLen/2)))
+
+		s += m.indent(coloredTimer, indentBy) + "\n\n" + m.indent(linesAroundCursor, indentBy)
+
+		if !state.timer.isRunning {
+			s += "\n\n\n"
+			s += lipgloss.PlaceHorizontal(termWidth, lipgloss.Center, style("ctrl+r to restart, ctrl+q to menu", m.styles.toEnter))
+		}
+
+	case KoreanWordCountBasedTest:
+		var coloredStopwatch string
+		if state.stopwatch.isRunning {
+			coloredStopwatch = style(state.stopwatch.stopwatch.View(), m.styles.runningTimer)
+		} else {
+			coloredStopwatch = style(state.stopwatch.stopwatch.View(), m.styles.stoppedTimer)
+		}
+
+		paragraphView := state.base.paragraphView(lineLenLimit, m.styles)
+		lines := strings.Split(paragraphView, "\n")
+		cursorLine := findCursorLine(strings.Split(paragraphView, "\n"), state.base.cursor)
+
+		linesAroundCursor := strings.Join(getLinesAroundCursor(lines, cursorLine), "\n")
+
+		s += positionVerticaly(termHeight)
+		avgLineLen := averageLineLen(lines)
+		indentBy := uint(math.Max(0, float64(termWidth/2-avgLineLen/2)))
+
+		s += m.indent(coloredStopwatch, indentBy) + "\n\n" + m.indent(linesAroundCursor, indentBy)
+
+		if !state.stopwatch.isRunning {
+			s += "\n\n\n"
+			s += lipgloss.PlaceHorizontal(termWidth, lipgloss.Center, style("ctrl+r to restart, ctrl+q to menu", m.styles.toEnter))
+		}
+
+	case KoreanSentenceCountBasedTest:
 		var coloredStopwatch string
 		if state.stopwatch.isRunning {
 			coloredStopwatch = style(state.stopwatch.stopwatch.View(), m.styles.runningTimer)
@@ -404,9 +536,22 @@ func (selection TimerBasedTestSettings) show(styles Styles) string {
 		wordListSelection = "no wordlist enabled"
 	}
 
+	// Check if current selection is Korean
+	isKoreanSelection := false
+	if selection.enabled && len(selection.wordListSelections) > 0 {
+		currentSelection := selection.wordListSelections[selection.wordListCursor].name
+		isKoreanSelection = strings.Contains(currentSelection, "Korean") || strings.Contains(currentSelection, "korean")
+	}
+
 	selections := []string{selection.timeSelections[selection.timeCursor].String(), wordListSelection}
 	selectionsStr := showSelections(selections, selection.cursor, styles)
-	return fmt.Sprintf("%s %s", "Timer run", selectionsStr)
+	
+	title := "Timer run"
+	if isKoreanSelection {
+		title = "Korean Timer"
+	}
+	
+	return fmt.Sprintf("%s %s", title, selectionsStr)
 }
 
 func (selection WordCountBasedTestSettings) show(styles Styles) string {

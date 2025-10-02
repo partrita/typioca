@@ -1,18 +1,20 @@
 package cmd
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/bloznelis/typioca/cmd/words"
 	"github.com/kirsle/configdir"
 )
 
-const currentConfigVersion = 4
+const currentConfigVersion = 5
 
 func ReadConfig() Config {
 	var config Config
@@ -139,6 +141,11 @@ func readLocalConfigFile(config *LocalConfig, configFile string) {
 
 	for idx := range config.Words {
 		config.Words[idx].isLocal = true
+		
+		// Auto-detect Korean files if Language is not set
+		if config.Words[idx].Language == "" {
+			config.Words[idx].Language = detectWordListLanguage(config.Words[idx].Path)
+		}
 	}
 
 }
@@ -148,6 +155,93 @@ func fileExists(path string) bool {
 		return false
 	}
 	return true
+}
+
+
+
+// detectWordListLanguage detects the language of a word list file
+func detectWordListLanguage(filePath string) string {
+	if !fileExists(filePath) {
+		return "english" // Default to English if file doesn't exist
+	}
+	
+	// Try to read the file and detect language
+	var words []string
+	var err error
+	
+	if strings.HasSuffix(filePath, ".json") {
+		words, err = readJSONWordList(filePath)
+	} else {
+		words, err = readTextWordList(filePath)
+	}
+	
+	if err != nil {
+		return "english" // Default to English on error
+	}
+	
+	// Sample first few words to determine language
+	sampleSize := min(10, len(words))
+	if sampleSize == 0 {
+		return "english"
+	}
+	
+	sampleText := strings.Join(words[:sampleSize], " ")
+	
+	if detectKoreanContent(sampleText) {
+		return "korean"
+	}
+	
+	return "english"
+}
+
+// readJSONWordList reads words from a JSON file
+func readJSONWordList(filePath string) ([]string, error) {
+	type WordSource struct {
+		Words []string `json:"words"`
+	}
+	
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	
+	var wordSource WordSource
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&wordSource)
+	if err != nil {
+		return nil, err
+	}
+	
+	return wordSource.Words, nil
+}
+
+// readTextWordList reads words from a text file (one word per line)
+func readTextWordList(filePath string) ([]string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	
+	var words []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line != "" {
+			words = append(words, line)
+		}
+	}
+	
+	return words, scanner.Err()
+}
+
+// min returns the minimum of two integers
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 func githubWordsURI(fileName string) string {
@@ -228,6 +322,7 @@ func defaultWordList(cachePath string, name string, localName string, enabled bo
 		RemoteURI: uri,
 		Enabled:   enabled,
 		synced:    fileExists(file),
+		Language:  "english",
 	}
 }
 
@@ -238,9 +333,16 @@ func defaultConfig() Config {
 	return Config{
 		TestSettingCursors: initTestSettingCursors(),
 		Version:            currentConfigVersion,
+		TimerSettings: TimerSettings{
+			DefaultDurations: []int{120, 60, 30, 15}, // English: 2min, 1min, 30s, 15s
+			KoreanDurations:  []int{30, 15, 10, 5},   // Korean: 30s, 15s, 10s, 5s (shorter for Korean practice)
+		},
 		EmbededWordLists: []EmbededWordList{
-			{"Common words", false, true},
-			{"Frankenstein sentences", true, true},
+			{"Common words", false, true, "english"},
+			{"Frankenstein sentences", true, true, "english"},
+			{"Korean common words", true, true, "korean"},
+			{"Korean tech terms", false, true, "korean"},
+			{"Korean sentences", false, true, "korean"},
 		},
 		WordLists: []WordList{
 			defaultWordList(cachePath, "Frankenstein words", "frankenstein.json", true, false),

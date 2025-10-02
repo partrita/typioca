@@ -1,0 +1,243 @@
+package cmd
+
+import (
+	"testing"
+	tea "github.com/charmbracelet/bubbletea"
+)
+
+func TestHandleKoreanRunes(t *testing.T) {
+	tests := []struct {
+		name           string
+		inputRune      rune
+		expectedRune   rune
+		shouldMistake  bool
+	}{
+		{
+			name:          "Correct Korean character",
+			inputRune:     '안',
+			expectedRune:  '안',
+			shouldMistake: false,
+		},
+		{
+			name:          "Incorrect Korean character",
+			inputRune:     '녕',
+			expectedRune:  '안',
+			shouldMistake: true,
+		},
+		{
+			name:          "Korean character for English expected",
+			inputRune:     '안',
+			expectedRune:  'a',
+			shouldMistake: true,
+		},
+		{
+			name:          "English character for Korean expected",
+			inputRune:     'a',
+			expectedRune:  '안',
+			shouldMistake: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			base := &TestBase{
+				wordsToEnter:  []rune{tt.expectedRune, '테', '스', '트'},
+				inputBuffer:   []rune{},
+				mistakes:      mistakes{mistakesAt: make(map[int]bool), rawMistakesCnt: 0},
+				cursor:        0,
+				rawInputCnt:   0,
+			}
+
+			msg := tea.KeyMsg{
+				Type:  tea.KeyRunes,
+				Runes: []rune{tt.inputRune},
+			}
+
+			initialMistakeCount := base.mistakes.rawMistakesCnt
+			handleKoreanRunes(msg, base, make(map[rune]rune))
+
+			// Check if input was added
+			if len(base.inputBuffer) != 1 {
+				t.Errorf("Expected input buffer length 1, got %d", len(base.inputBuffer))
+			}
+
+			if base.inputBuffer[0] != tt.inputRune {
+				t.Errorf("Expected input buffer to contain %c, got %c", tt.inputRune, base.inputBuffer[0])
+			}
+
+			// Check mistake tracking
+			if tt.shouldMistake {
+				if base.mistakes.rawMistakesCnt != initialMistakeCount+1 {
+					t.Errorf("Expected mistake count to increase by 1, got %d", base.mistakes.rawMistakesCnt)
+				}
+				if !base.mistakes.mistakesAt[0] {
+					t.Errorf("Expected mistake to be recorded at position 0")
+				}
+			} else {
+				if base.mistakes.rawMistakesCnt != initialMistakeCount {
+					t.Errorf("Expected no mistake, but mistake count increased")
+				}
+				if base.mistakes.mistakesAt[0] {
+					t.Errorf("Expected no mistake at position 0, but mistake was recorded")
+				}
+			}
+
+			// Check cursor position
+			if base.cursor != 1 {
+				t.Errorf("Expected cursor at position 1, got %d", base.cursor)
+			}
+		})
+	}
+}
+
+func TestHandleKoreanBackspace(t *testing.T) {
+	base := &TestBase{
+		wordsToEnter:  []rune{'안', '녕', '하', '세', '요'},
+		inputBuffer:   []rune{'안', '녕'},
+		mistakes:      mistakes{mistakesAt: map[int]bool{1: true}, rawMistakesCnt: 1},
+		cursor:        2,
+		rawInputCnt:   2,
+	}
+
+	handleKoreanBackspace(base)
+
+	// Check that last character was removed
+	if len(base.inputBuffer) != 1 {
+		t.Errorf("Expected input buffer length 1, got %d", len(base.inputBuffer))
+	}
+
+	if base.inputBuffer[0] != '안' {
+		t.Errorf("Expected input buffer to contain '안', got %c", base.inputBuffer[0])
+	}
+
+	// Check that mistake at position 1 was removed
+	if base.mistakes.mistakesAt[1] {
+		t.Errorf("Expected mistake at position 1 to be removed")
+	}
+
+	// Check cursor position
+	if base.cursor != 1 {
+		t.Errorf("Expected cursor at position 1, got %d", base.cursor)
+	}
+}
+
+func TestHandleKoreanSpace(t *testing.T) {
+	base := &TestBase{
+		wordsToEnter:  []rune{'안', '녕', ' ', '하', '세', '요'},
+		inputBuffer:   []rune{'안', '녕'},
+		mistakes:      mistakes{mistakesAt: make(map[int]bool), rawMistakesCnt: 0},
+		cursor:        2,
+		rawInputCnt:   2,
+	}
+
+	handleKoreanSpace(base)
+
+	// Check that space was added
+	if len(base.inputBuffer) != 3 {
+		t.Errorf("Expected input buffer length 3, got %d", len(base.inputBuffer))
+	}
+
+	if base.inputBuffer[2] != ' ' {
+		t.Errorf("Expected space at position 2, got %c", base.inputBuffer[2])
+	}
+
+	// Check cursor position
+	if base.cursor != 3 {
+		t.Errorf("Expected cursor at position 3, got %d", base.cursor)
+	}
+
+	// Check that no mistake was recorded (correct space)
+	if base.mistakes.mistakesAt[2] {
+		t.Errorf("Expected no mistake for correct space")
+	}
+}
+
+func TestValidateKoreanInput(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       rune
+		expected    rune
+		shouldError bool
+	}{
+		{
+			name:        "Korean input, Korean expected",
+			input:       '안',
+			expected:    '녕',
+			shouldError: false,
+		},
+		{
+			name:        "English input, English expected",
+			input:       'a',
+			expected:    'b',
+			shouldError: false,
+		},
+		{
+			name:        "Korean input, English expected",
+			input:       '안',
+			expected:    'a',
+			shouldError: true,
+		},
+		{
+			name:        "English input, Korean expected",
+			input:       'a',
+			expected:    '안',
+			shouldError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateKoreanInput(tt.input, tt.expected)
+
+			if tt.shouldError && err == nil {
+				t.Errorf("Expected error but got none")
+			}
+
+			if !tt.shouldError && err != nil {
+				t.Errorf("Expected no error but got: %v", err)
+			}
+		})
+	}
+}
+
+func TestKoreanInputHandlingEdgeCases(t *testing.T) {
+	t.Run("Empty input buffer backspace", func(t *testing.T) {
+		base := &TestBase{
+			wordsToEnter:  []rune{'안', '녕'},
+			inputBuffer:   []rune{},
+			mistakes:      mistakes{mistakesAt: make(map[int]bool), rawMistakesCnt: 0},
+			cursor:        0,
+			rawInputCnt:   0,
+		}
+
+		handleKoreanBackspace(base)
+
+		// Should not crash and buffer should remain empty
+		if len(base.inputBuffer) != 0 {
+			t.Errorf("Expected empty buffer to remain empty")
+		}
+	})
+
+	t.Run("Input beyond text length", func(t *testing.T) {
+		base := &TestBase{
+			wordsToEnter:  []rune{'안'},
+			inputBuffer:   []rune{'안'},
+			mistakes:      mistakes{mistakesAt: make(map[int]bool), rawMistakesCnt: 0},
+			cursor:        1,
+			rawInputCnt:   1,
+		}
+
+		msg := tea.KeyMsg{
+			Type:  tea.KeyRunes,
+			Runes: []rune{'녕'},
+		}
+
+		initialLength := len(base.inputBuffer)
+		handleKoreanRunes(msg, base, make(map[rune]rune))
+
+		// Should not add input beyond text length
+		if len(base.inputBuffer) != initialLength {
+			t.Errorf("Expected input buffer length to remain %d, got %d", initialLength, len(base.inputBuffer))
+		}
+	})
+}

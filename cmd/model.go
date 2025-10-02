@@ -132,6 +132,22 @@ func (s SentenceCountBasedTestSettings) Enabled() bool {
 	return s.enabled
 }
 
+// Korean test settings structures
+type KoreanTimerBasedTestSettings struct {
+	TimerBasedTestSettings
+	language string // "korean"
+}
+
+type KoreanWordCountBasedTestSettings struct {
+	WordCountBasedTestSettings
+	language string // "korean"
+}
+
+type KoreanSentenceCountBasedTestSettings struct {
+	SentenceCountBasedTestSettings
+	language string // "korean"
+}
+
 type ConfigViewSelection struct{}
 
 func (s ConfigViewSelection) Enabled() bool {
@@ -145,6 +161,10 @@ type MainMenu struct {
 	timeBasedGenerator     words.WordsGenerator
 	wordCountGenerator     words.WordsGenerator
 	sentenceCountGenerator words.WordsGenerator
+	// Korean generators
+	koreanTimeBasedGenerator   words.WordsGenerator
+	koreanWordCountGenerator   words.WordsGenerator
+	koreanSentenceGenerator    words.WordsGenerator
 }
 
 type TestBase struct {
@@ -203,6 +223,54 @@ type SentenceCountTestResults struct {
 	mainMenu      MainMenu
 }
 
+// Korean test structures
+type KoreanTimerBasedTest struct {
+	settings  KoreanTimerBasedTestSettings
+	timer     myTimer
+	base      TestBase
+	completed bool
+	mainMenu  MainMenu
+}
+
+type KoreanTimerBasedTestResults struct {
+	settings      KoreanTimerBasedTestSettings
+	wpmEachSecond []float64
+	results       Results
+	mainMenu      MainMenu
+}
+
+type KoreanWordCountBasedTest struct {
+	settings  KoreanWordCountBasedTestSettings
+	stopwatch myStopWatch
+	base      TestBase
+	completed bool
+	mainMenu  MainMenu
+}
+
+type KoreanWordCountTestResults struct {
+	settings      KoreanWordCountBasedTestSettings
+	wpmEachSecond []float64
+	wordCnt       int
+	results       Results
+	mainMenu      MainMenu
+}
+
+type KoreanSentenceCountBasedTest struct {
+	settings  KoreanSentenceCountBasedTestSettings
+	stopwatch myStopWatch
+	base      TestBase
+	completed bool
+	mainMenu  MainMenu
+}
+
+type KoreanSentenceCountTestResults struct {
+	settings      KoreanSentenceCountBasedTestSettings
+	wpmEachSecond []float64
+	sentenceCnt   int
+	results       Results
+	mainMenu      MainMenu
+}
+
 type ConfigView struct {
 	mainMenu MainMenu
 	config   Config
@@ -218,6 +286,16 @@ type TestSettingCursors struct {
 
 	SentenceCountCursor         int
 	SentenceCountWordlistCursor int
+
+	// Korean test cursors
+	KoreanTimerTimeCursor     int
+	KoreanTimerWordlistCursor int
+
+	KoreanWordCountCursor         int
+	KoreanWordCountWordlistCursor int
+
+	KoreanSentenceCountCursor         int
+	KoreanSentenceCountWordlistCursor int
 }
 
 type LayoutFile struct {
@@ -250,6 +328,7 @@ type WordList struct {
 	Enabled   bool
 	synced    bool
 	syncOK    bool
+	Language  string // "english" or "korean"
 }
 
 func (wordList *WordList) toggleEnabled() {
@@ -262,6 +341,7 @@ type EmbededWordList struct {
 	Name        string
 	IsSentences bool
 	Enabled     bool
+	Language    string // "english" or "korean"
 }
 
 func (embeded *EmbededWordList) toggleEnabled() {
@@ -275,6 +355,12 @@ type Config struct {
 	LayoutFiles        []LayoutFile
 	Layout             Layout
 	Version            int
+	TimerSettings      TimerSettings
+}
+
+type TimerSettings struct {
+	DefaultDurations []int // Duration in seconds
+	KoreanDurations  []int // Korean-specific durations in seconds
 }
 
 type LocalConfig struct {

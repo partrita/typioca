@@ -1,0 +1,576 @@
+package cmd
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/bloznelis/typioca/cmd/words"
+)
+
+func TestKoreanTypingTestEndToEnd(t *testing.T) {
+	// Test complete Korean typing test flow
+	t.Run("Korean Timer Based Test Flow", func(t *testing.T) {
+		// Initialize Korean timer-based test
+		config := Config{
+			TestSettingCursors: TestSettingCursors{
+				KoreanTimerTimeCursor:     0,
+				KoreanTimerWordlistCursor: 0,
+			},
+		}
+		
+		koreanWords := []WordsSelection{
+			{name: "Korean Common", generatorKey: "Korean common words"},
+		}
+		
+		settings := initKoreanTimerBasedTestSettings(config, koreanWords)
+		
+		mainMenu := MainMenu{
+			koreanTimeBasedGenerator: words.NewKoreanGenerator([]string{}),
+		}
+		
+		test := initKoreanTimerBasedTest(settings, mainMenu)
+		
+		// Verify initial state
+		if test.completed {
+			t.Error("Test should not be completed initially")
+		}
+		
+		if test.timer.isRunning {
+			t.Error("Timer should not be running initially")
+		}
+		
+		// Start the test (simulate first keystroke)
+		test.timer.isRunning = true
+		
+		if !test.timer.isRunning {
+			t.Error("Timer should be running after start")
+		}
+		
+		// Simulate typing Korean characters
+		koreanInput := []rune("안녕하세요")
+		for _, r := range koreanInput {
+			test.base.inputBuffer = append(test.base.inputBuffer, r)
+		}
+		
+		// Verify input was processed
+		if len(test.base.inputBuffer) != len(koreanInput) {
+			t.Errorf("Expected input buffer length %d, got %d", len(koreanInput), len(test.base.inputBuffer))
+		}
+		
+		// Verify Korean characters were handled correctly
+		for i, expected := range koreanInput {
+			if i < len(test.base.inputBuffer) && test.base.inputBuffer[i] != expected {
+				t.Errorf("Expected character %c at position %d, got %c", expected, i, test.base.inputBuffer[i])
+			}
+		}
+	})
+	
+	t.Run("Korean Word Count Based Test Flow", func(t *testing.T) {
+		// Initialize Korean word count-based test
+		config := Config{
+			TestSettingCursors: TestSettingCursors{
+				KoreanWordCountCursor:         0,
+				KoreanWordCountWordlistCursor: 0,
+			},
+		}
+		
+		koreanWords := []WordsSelection{
+			{name: "Korean Common", generatorKey: "Korean common words"},
+		}
+		
+		settings := initKoreanWordCountBasedTestSettings(config, koreanWords)
+		
+		mainMenu := MainMenu{
+			koreanWordCountGenerator: words.NewKoreanGenerator([]string{}),
+		}
+		
+		test := initKoreanWordCountBasedTest(settings, mainMenu)
+		
+		// Verify initial state
+		if test.completed {
+			t.Error("Test should not be completed initially")
+		}
+		
+		// Start the test
+		test.stopwatch.isRunning = true
+		
+		// Simulate typing and completing words
+		// This should trigger word count tracking
+		koreanWordsList := []string{"안녕", "하세요", "프로그래밍"}
+		for _, word := range koreanWordsList {
+			for _, r := range word {
+				test.base.inputBuffer = append(test.base.inputBuffer, r)
+			}
+			// Add space to complete word
+			test.base.inputBuffer = append(test.base.inputBuffer, ' ')
+		}
+		
+		// Verify input was processed
+		expectedLength := 0
+		for _, word := range koreanWordsList {
+			expectedLength += len([]rune(word)) + 1 // +1 for space
+		}
+		
+		if len(test.base.inputBuffer) != expectedLength {
+			t.Errorf("Expected input buffer length %d, got %d", expectedLength, len(test.base.inputBuffer))
+		}
+	})
+	
+	t.Run("Korean Sentence Count Based Test Flow", func(t *testing.T) {
+		// Initialize Korean sentence count-based test
+		config := Config{
+			TestSettingCursors: TestSettingCursors{
+				KoreanSentenceCountCursor:         0,
+				KoreanSentenceCountWordlistCursor: 0,
+			},
+		}
+		
+		koreanSentences := []WordsSelection{
+			{name: "Korean Sentences", generatorKey: "Korean sentences"},
+		}
+		
+		settings := initKoreanSentenceCountBasedTestSettings(config, koreanSentences)
+		
+		mainMenu := MainMenu{
+			koreanSentenceGenerator: words.NewKoreanGenerator([]string{}),
+		}
+		
+		test := initKoreanSentenceCountBasedTest(settings, mainMenu)
+		
+		// Verify initial state
+		if test.completed {
+			t.Error("Test should not be completed initially")
+		}
+		
+		// Start the test
+		test.stopwatch.isRunning = true
+		
+		// Simulate typing Korean sentences
+		koreanSentence := "안녕하세요. 반갑습니다."
+		for _, r := range koreanSentence {
+			test.base.inputBuffer = append(test.base.inputBuffer, r)
+		}
+		
+		// Verify input was processed correctly
+		expectedRunes := []rune(koreanSentence)
+		if len(test.base.inputBuffer) != len(expectedRunes) {
+			t.Errorf("Expected input buffer length %d, got %d", len(expectedRunes), len(test.base.inputBuffer))
+		}
+		
+		// Verify Korean punctuation was handled
+		inputStr := string(test.base.inputBuffer)
+		if !strings.Contains(inputStr, ".") {
+			t.Error("Korean sentence punctuation should be preserved")
+		}
+	})
+}
+
+func TestKoreanCustomFileLoadingIntegration(t *testing.T) {
+	// Create temporary directory for test files
+	tempDir, err := os.MkdirTemp("", "korean_custom_integration_test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+	
+	t.Run("Korean JSON Custom File Integration", func(t *testing.T) {
+		// Create Korean JSON custom file
+		koreanJSON := `{
+			"metadata": {
+				"name": "Custom Korean Words",
+				"size": 5,
+				"packagedAt": "2024-01-01T00:00:00Z",
+				"version": 1
+			},
+			"words": ["커스텀", "한글", "단어", "테스트", "파일"]
+		}`
+		
+		jsonPath := filepath.Join(tempDir, "korean_custom.json")
+		err := os.WriteFile(jsonPath, []byte(koreanJSON), 0644)
+		if err != nil {
+			t.Fatalf("Failed to write JSON file: %v", err)
+		}
+		
+		// Test loading custom Korean file
+		generator := words.NewKoreanGenerator([]string{jsonPath})
+		
+		// Test that generator was created successfully
+		if generator.Count != 300 {
+			t.Error("Korean generator should have default count of 300")
+		}
+		
+		// Test that generator can generate Korean content from embedded sources
+		result := generator.Generate("Korean common words")
+		if len(result) == 0 {
+			t.Error("Should generate words from Korean sources")
+		}
+		
+		// Verify Korean content
+		resultStr := string(result)
+		hasKorean := false
+		for _, r := range result {
+			if r >= 0xAC00 && r <= 0xD7AF { // Korean syllables
+				hasKorean = true
+				break
+			}
+		}
+		
+		if !hasKorean {
+			t.Errorf("Korean generator should generate Korean content, got: %s", resultStr)
+		}
+	})
+	
+	t.Run("Korean Text Custom File Integration", func(t *testing.T) {
+		// Create Korean text custom file
+		koreanText := "안녕하세요\n프로그래밍\n데이터베이스\n알고리즘\n인터페이스"
+		
+		textPath := filepath.Join(tempDir, "korean_custom.txt")
+		err := os.WriteFile(textPath, []byte(koreanText), 0644)
+		if err != nil {
+			t.Fatalf("Failed to write text file: %v", err)
+		}
+		
+		// Test loading custom Korean text file
+		generator := words.NewKoreanGenerator([]string{textPath})
+		
+		// Test that generator was created successfully with custom file
+		if generator.Count != 300 {
+			t.Error("Korean generator should have default count of 300")
+		}
+		
+		// Test that generator can generate Korean content from embedded sources
+		result := generator.Generate("Korean common words")
+		if len(result) == 0 {
+			t.Error("Should be able to generate Korean content")
+		}
+		
+		// Verify Korean content is generated
+		hasKorean := false
+		for _, r := range result {
+			if r >= 0xAC00 && r <= 0xD7AF { // Korean syllables
+				hasKorean = true
+				break
+			}
+		}
+		
+		if !hasKorean {
+			t.Error("Korean generator should generate Korean content")
+		}
+	})
+}
+
+func TestKoreanResultsCalculationIntegration(t *testing.T) {
+	t.Run("Korean Timer Test Results", func(t *testing.T) {
+		// Create a Korean timer-based test
+		settings := KoreanTimerBasedTestSettings{
+			TimerBasedTestSettings: TimerBasedTestSettings{
+				timeSelections:     []time.Duration{time.Second * 30},
+				timeCursor:         0,
+				wordListSelections: []WordsSelection{{name: "Korean Common", generatorKey: "Korean common words"}},
+				wordListCursor:     0,
+				enabled:            true,
+			},
+			language: "korean",
+		}
+		
+		mainMenu := MainMenu{
+			koreanTimeBasedGenerator: words.NewKoreanGenerator([]string{}),
+		}
+		
+		test := initKoreanTimerBasedTest(settings, mainMenu)
+		
+		// Simulate typing Korean text
+		koreanInput := "안녕하세요 프로그래밍 데이터베이스"
+		test.base.wordsToEnter = []rune(koreanInput)
+		
+		// Simulate perfect typing
+		for _, r := range koreanInput {
+			test.base.inputBuffer = append(test.base.inputBuffer, r)
+		}
+		
+		// Set test as completed
+		test.completed = true
+		test.timer.duration = time.Second * 30
+		
+		// Calculate results
+		results := test.calculateKoreanResults()
+		
+		// Verify Korean-specific calculations
+		if results.wpm <= 0 {
+			t.Error("Korean WPM should be calculated and positive")
+		}
+		
+		if results.accuracy != 100.0 {
+			t.Errorf("Expected 100%% accuracy for perfect typing, got %.1f%%", results.accuracy)
+		}
+		
+		if results.wordList != "Korean Common" {
+			t.Errorf("Expected word list 'Korean Common', got '%s'", results.wordList)
+		}
+		
+		// Verify time duration is set
+		if results.time != time.Second*30 {
+			t.Errorf("Expected time duration 30s, got %v", results.time)
+		}
+	})
+	
+	t.Run("Korean Word Count Test Results", func(t *testing.T) {
+		// Create a Korean word count-based test
+		settings := KoreanWordCountBasedTestSettings{
+			WordCountBasedTestSettings: WordCountBasedTestSettings{
+				wordCountSelections: []int{25},
+				wordCountCursor:     0,
+				wordListSelections:  []WordsSelection{{name: "Korean Tech", generatorKey: "Korean tech terms"}},
+				wordListCursor:      0,
+				enabled:             true,
+			},
+			language: "korean",
+		}
+		
+		mainMenu := MainMenu{
+			koreanWordCountGenerator: words.NewKoreanGenerator([]string{}),
+		}
+		
+		test := initKoreanWordCountBasedTest(settings, mainMenu)
+		
+		// Simulate typing Korean tech terms
+		koreanInput := "데이터베이스 알고리즘 인터페이스"
+		test.base.wordsToEnter = []rune(koreanInput)
+		
+		// Simulate typing with some errors
+		correctInput := "데이터베이스 알고리즘 인터페이"
+		for _, r := range correctInput {
+			test.base.inputBuffer = append(test.base.inputBuffer, r)
+		}
+		
+		// Set test as completed
+		test.completed = true
+		
+		// For this test, we'll just verify that the test can be completed
+		// and that the Korean settings are preserved
+		if test.settings.language != "korean" {
+			t.Error("Korean test should maintain Korean language setting")
+		}
+		
+		if !test.completed {
+			t.Error("Test should be marked as completed")
+		}
+		
+		// Verify input was processed
+		if len(test.base.inputBuffer) == 0 {
+			t.Error("Input buffer should contain typed characters")
+		}
+	})
+	
+	t.Run("Korean Sentence Test Results", func(t *testing.T) {
+		// Create a Korean sentence count-based test
+		settings := KoreanSentenceCountBasedTestSettings{
+			SentenceCountBasedTestSettings: SentenceCountBasedTestSettings{
+				sentenceCountSelections: []int{5},
+				sentenceCountCursor:     0,
+				sentenceListSelections:  []WordsSelection{{name: "Korean Sentences", generatorKey: "Korean sentences"}},
+				sentenceListCursor:      0,
+				enabled:                 true,
+			},
+			language: "korean",
+		}
+		
+		mainMenu := MainMenu{
+			koreanSentenceGenerator: words.NewKoreanGenerator([]string{}),
+		}
+		
+		test := initKoreanSentenceCountBasedTest(settings, mainMenu)
+		
+		// Simulate typing Korean sentences
+		koreanSentences := "안녕하세요. 프로그래밍은 재미있습니다. 한글 타이핑 연습을 해봅시다."
+		test.base.wordsToEnter = []rune(koreanSentences)
+		
+		// Simulate perfect typing
+		for _, r := range koreanSentences {
+			test.base.inputBuffer = append(test.base.inputBuffer, r)
+		}
+		
+		// Set test as completed
+		test.completed = true
+		
+		// For this test, we'll verify the Korean sentence handling
+		if test.settings.language != "korean" {
+			t.Error("Korean test should maintain Korean language setting")
+		}
+		
+		if !test.completed {
+			t.Error("Test should be marked as completed")
+		}
+		
+		// Verify sentence punctuation is preserved
+		inputStr := string(test.base.inputBuffer)
+		if !strings.Contains(inputStr, ".") {
+			t.Error("Korean sentence punctuation should be preserved in results")
+		}
+		
+		// Verify Korean characters are present
+		hasKorean := false
+		for _, r := range test.base.inputBuffer {
+			if r >= 0xAC00 && r <= 0xD7AF { // Korean syllables
+				hasKorean = true
+				break
+			}
+		}
+		
+		if !hasKorean {
+			t.Error("Input should contain Korean characters")
+		}
+	})
+}
+
+func TestKoreanTestStateTransitions(t *testing.T) {
+	t.Run("Korean Test Menu Navigation", func(t *testing.T) {
+		// Test that Korean tests can be selected and started from menu
+		config := defaultConfig()
+		
+		// Add Korean word lists to config
+		config.WordLists = append(config.WordLists, WordList{
+			Name:     "Korean Test List",
+			Enabled:  true,
+			Language: "korean",
+			Sentences: false,
+			synced:   true,
+		})
+		
+		// Initialize main menu with Korean support
+		koreanSelections := filterEnabledKoreanSelections(config)
+		if len(koreanSelections) == 0 {
+			t.Skip("No Korean selections available for menu test")
+		}
+		
+		// Verify Korean selections are available
+		koreanTimerSettings := initKoreanTimerBasedTestSettings(config, koreanSelections)
+		if !koreanTimerSettings.enabled {
+			t.Error("Korean timer settings should be enabled when Korean word lists are available")
+		}
+		
+		// Test that Korean test can be initialized
+		mainMenu := MainMenu{
+			koreanTimeBasedGenerator: words.NewKoreanGenerator([]string{}),
+		}
+		
+		test := initKoreanTimerBasedTest(koreanTimerSettings, mainMenu)
+		
+		// Verify test is properly initialized
+		if test.settings.language != "korean" {
+			t.Error("Korean test should have Korean language setting")
+		}
+		
+		if test.completed {
+			t.Error("New Korean test should not be completed")
+		}
+	})
+	
+	t.Run("Korean Test Restart Functionality", func(t *testing.T) {
+		// Create a Korean test that has been started
+		settings := KoreanTimerBasedTestSettings{
+			TimerBasedTestSettings: TimerBasedTestSettings{
+				timeSelections:     []time.Duration{time.Second * 30},
+				timeCursor:         0,
+				wordListSelections: []WordsSelection{{name: "Korean Common", generatorKey: "Korean common words"}},
+				wordListCursor:     0,
+				enabled:            true,
+			},
+			language: "korean",
+		}
+		
+		mainMenu := MainMenu{
+			koreanTimeBasedGenerator: words.NewKoreanGenerator([]string{}),
+		}
+		
+		test := initKoreanTimerBasedTest(settings, mainMenu)
+		
+		// Start and modify the test
+		test.timer.isRunning = true
+		test.base.inputBuffer = []rune("안녕하세요")
+		test.base.rawInputCnt = 5
+		
+		// Verify test state before restart
+		if !test.timer.isRunning {
+			t.Error("Timer should be running before restart")
+		}
+		
+		if len(test.base.inputBuffer) == 0 {
+			t.Error("Input buffer should have content before restart")
+		}
+		
+		// Simulate restart (this would typically be triggered by Ctrl+R)
+		// Reset test state
+		newTest := initKoreanTimerBasedTest(settings, mainMenu)
+		
+		// Verify test was reset
+		if newTest.timer.isRunning {
+			t.Error("Timer should not be running after restart")
+		}
+		
+		if len(newTest.base.inputBuffer) != 0 {
+			t.Error("Input buffer should be empty after restart")
+		}
+		
+		if newTest.base.rawInputCnt != 0 {
+			t.Error("Raw input count should be reset after restart")
+		}
+	})
+}
+
+func TestKoreanDisplayAndFormatting(t *testing.T) {
+	t.Run("Korean Text Display Integration", func(t *testing.T) {
+		// Test that Korean text is properly displayed in test views
+		settings := KoreanTimerBasedTestSettings{
+			TimerBasedTestSettings: TimerBasedTestSettings{
+				timeSelections:     []time.Duration{time.Second * 30},
+				timeCursor:         0,
+				wordListSelections: []WordsSelection{{name: "Korean Common", generatorKey: "Korean common words"}},
+				wordListCursor:     0,
+				enabled:            true,
+			},
+			language: "korean",
+		}
+		
+		mainMenu := MainMenu{
+			koreanTimeBasedGenerator: words.NewKoreanGenerator([]string{}),
+		}
+		
+		test := initKoreanTimerBasedTest(settings, mainMenu)
+		
+		// Set up Korean text to display
+		koreanText := "안녕하세요 프로그래밍 데이터베이스 알고리즘"
+		test.base.wordsToEnter = []rune(koreanText)
+		
+		// Test Korean text wrapping and display
+		// This tests the Korean-specific display functions
+		
+		// Test that Korean text can be rendered without errors
+		// The actual rendering would be tested in view tests, but we verify
+		// that the Korean text is properly handled
+		if len(test.base.wordsToEnter) == 0 {
+			t.Error("Korean text should be set for display")
+		}
+		
+		// Verify Korean characters are preserved
+		displayText := string(test.base.wordsToEnter)
+		if !strings.Contains(displayText, "안녕하세요") {
+			t.Error("Korean text should be preserved for display")
+		}
+		
+		// Test Korean character counting for display
+		koreanCharCount := 0
+		for _, r := range test.base.wordsToEnter {
+			if r >= 0xAC00 && r <= 0xD7AF { // Korean syllables
+				koreanCharCount++
+			}
+		}
+		
+		if koreanCharCount == 0 {
+			t.Error("Should detect Korean characters in display text")
+		}
+	})
+}
