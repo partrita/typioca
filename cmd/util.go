@@ -2,13 +2,14 @@ package cmd
 
 import (
 	"math"
+	"unicode/utf8"
 )
 
 func longestStringLen(strings []string) int {
 	var longest int
 	for _, elem := range strings {
-		length := len(elem)
-		if len(elem) > longest {
+		length := utf8.RuneCountInString(elem)
+		if length > longest {
 			longest = length
 		}
 	}
@@ -31,7 +32,7 @@ func averageStringLen(strings []string) int {
 	var cnt int = 0
 
 	for _, str := range strings {
-		currentLen := len([]rune(dropAnsiCodes(str)))
+		currentLen := utf8.RuneCountInString(dropAnsiCodes(str))
 		totalLen += currentLen
 		cnt += 1
 	}

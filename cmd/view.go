@@ -17,6 +17,7 @@ import (
 var lineLenLimit int
 var minLineLen int = 5
 var maxLineLen int = 40
+var ansiRegex = regexp.MustCompile("\x1b\\[[0-9;]*m")
 var resultsStyle = lipgloss.NewStyle().
 	Align(lipgloss.Center).
 	PaddingTop(1).
@@ -613,9 +614,7 @@ func getLinesAroundCursor(lines []string, cursorLine int) []string {
 }
 
 func dropAnsiCodes(colored string) string {
-	m := regexp.MustCompile("\x1b\\[[0-9;]*m")
-
-	return m.ReplaceAllString(colored, "")
+	return ansiRegex.ReplaceAllString(colored, "")
 }
 
 func (m model) indent(block string, indentBy uint) string {
