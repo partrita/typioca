@@ -8,8 +8,8 @@ import (
 func longestStringLen(strings []string) int {
 	var longest int
 	for _, elem := range strings {
-		length := len(elem)
-		if len(elem) > longest {
+		length := utf8.RuneCountInString(elem)
+		if length > longest {
 			longest = length
 		}
 	}
