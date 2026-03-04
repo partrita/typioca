@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/guptarohit/asciigraph"
@@ -17,6 +18,7 @@ import (
 var lineLenLimit int
 var minLineLen int = 5
 var maxLineLen int = 40
+var ansiRegex = regexp.MustCompile("\x1b\\[[0-9;]*m")
 var resultsStyle = lipgloss.NewStyle().
 	Align(lipgloss.Center).
 	PaddingTop(1).
@@ -701,7 +703,7 @@ func findCursorLine(lines []string, cursorAt int) int {
 	cursorLine := 0
 
 	for _, line := range lines {
-		lineLen := len(dropAnsiCodes(line))
+		lineLen := utf8.RuneCountInString(dropAnsiCodes(line))
 
 		lenAcc += lineLen
 
