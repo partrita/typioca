@@ -9,3 +9,7 @@
 ## 2026-03-05 - [Optimize TUI rendering by reducing ANSI processing and using O(1) heuristics]
 **Learning:** In performance-critical TUI render loops, stripping ANSI codes via regex to calculate string length is expensive due to frequent allocations and regex overhead. Additionally, calculating metrics like average line length over a large text block in every `View` call is $O(N)$ where $N$ is the number of lines.
 **Action:** Implement manual rune counting that skips ANSI CSI sequences (terminating on 0x40-0x7E) to avoid allocations. Use $O(1)$ heuristics (like averaging only the first 3 lines) for layout centering in the `View` loop.
+
+## 2026-03-06 - [Avoid unnecessary type conversions in Go 1.21+ logic]
+**Learning:** Using `math.Max` or `math.Min` for integer clipping/clamping in Go requires casting to and from `float64`, which is clunky and slightly less efficient than using the built-in `max()` and `min()` functions introduced in Go 1.21. For generating repetitive terminal sequences like newlines, `strings.Repeat` is also more efficient than manual loops.
+**Action:** Use built-in `max()`/`min()` for integer-based logic in projects using Go 1.21+. Use `strings.Repeat` for simple repetitive string generation.

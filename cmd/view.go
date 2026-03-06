@@ -228,7 +228,7 @@ func (m model) View() string {
 		miscStatsLine1 := fmt.Sprintf("%s %s %s %s", accuracy, deltaWpm, rawWpmShow, givenTime)
 		miscStatsLine2 := words
 
-		miscStatsLine1Len := len(dropAnsiCodes(miscStatsLine1))
+		miscStatsLine1Len := runeCountIgnoringAnsi(miscStatsLine1)
 		plotData := append(state.wpmEachSecond, float64(state.results.wpm))
 		wpmsPlot := plotWpms(plotData, miscStatsLine1Len-2)
 
@@ -247,7 +247,7 @@ func (m model) View() string {
 		miscStatsLine1 := fmt.Sprintf("%s %s %s %s", accuracy, deltaWpm, rawWpmShow, givenTime)
 		miscStatsLine2 := wordCnt + " " + words
 
-		miscStatsLine1Len := len(dropAnsiCodes(miscStatsLine1))
+		miscStatsLine1Len := runeCountIgnoringAnsi(miscStatsLine1)
 
 		plotData := append(state.wpmEachSecond, float64(state.results.wpm))
 		wpmsPlot := plotWpms(plotData, miscStatsLine1Len-2)
@@ -267,7 +267,7 @@ func (m model) View() string {
 		miscStatsLine1 := fmt.Sprintf("%s %s %s %s", accuracy, deltaWpm, rawWpmShow, givenTime)
 		miscStatsLine2 := sentenceCnt + " " + words
 
-		miscStatsLine1Len := len(dropAnsiCodes(miscStatsLine1))
+		miscStatsLine1Len := runeCountIgnoringAnsi(miscStatsLine1)
 		plotData := append(state.wpmEachSecond, float64(state.results.wpm))
 		wpmsPlot := plotWpms(plotData, miscStatsLine1Len-2)
 
@@ -285,7 +285,7 @@ func (m model) View() string {
 		miscStatsLine1 := fmt.Sprintf("%s %s %s %s", accuracy, deltaWpm, rawWpmShow, givenTime)
 		miscStatsLine2 := words
 
-		miscStatsLine1Len := len(dropAnsiCodes(miscStatsLine1))
+		miscStatsLine1Len := runeCountIgnoringAnsi(miscStatsLine1)
 		plotData := append(state.wpmEachSecond, float64(state.results.wpm))
 		wpmsPlot := plotWpms(plotData, miscStatsLine1Len-2)
 
@@ -304,7 +304,7 @@ func (m model) View() string {
 		miscStatsLine1 := fmt.Sprintf("%s %s %s %s", accuracy, deltaWpm, rawWpmShow, givenTime)
 		miscStatsLine2 := wordCnt + " " + words
 
-		miscStatsLine1Len := len(dropAnsiCodes(miscStatsLine1))
+		miscStatsLine1Len := runeCountIgnoringAnsi(miscStatsLine1)
 
 		plotData := append(state.wpmEachSecond, float64(state.results.wpm))
 		wpmsPlot := plotWpms(plotData, miscStatsLine1Len-2)
@@ -324,7 +324,7 @@ func (m model) View() string {
 		miscStatsLine1 := fmt.Sprintf("%s %s %s %s", accuracy, deltaWpm, rawWpmShow, givenTime)
 		miscStatsLine2 := sentenceCnt + " " + words
 
-		miscStatsLine1Len := len(dropAnsiCodes(miscStatsLine1))
+		miscStatsLine1Len := runeCountIgnoringAnsi(miscStatsLine1)
 		plotData := append(state.wpmEachSecond, float64(state.results.wpm))
 		wpmsPlot := plotWpms(plotData, miscStatsLine1Len-2)
 
@@ -495,13 +495,7 @@ func plusIfPositive(f float64) string {
 }
 
 func positionVerticaly(termHeight int) string {
-	var acc strings.Builder
-
-	for i := 0; i < termHeight/2-3; i++ {
-		acc.WriteRune('\n')
-	}
-
-	return acc.String()
+	return strings.Repeat("\n", max(0, termHeight/2-3))
 }
 
 func plotWpms(wpms []float64, width int) string {
