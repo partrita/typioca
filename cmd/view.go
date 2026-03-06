@@ -7,7 +7,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/guptarohit/asciigraph"
@@ -347,7 +346,7 @@ func (m model) View() string {
 		linesAroundCursor := strings.Join(getLinesAroundCursor(lines, cursorLine), "\n")
 
 		s += positionVerticaly(termHeight)
-		avgLineLen := averageLineLen(lines)
+		avgLineLen := averageLineLenFast(lines)
 		indentBy := uint(math.Max(0, float64(termWidth/2-avgLineLen/2)))
 
 		s += m.indent(coloredTimer, indentBy) + "\n\n" + m.indent(linesAroundCursor, indentBy)
@@ -372,7 +371,7 @@ func (m model) View() string {
 		linesAroundCursor := strings.Join(getLinesAroundCursor(lines, cursorLine), "\n")
 
 		s += positionVerticaly(termHeight)
-		avgLineLen := averageLineLen(lines)
+		avgLineLen := averageLineLenFast(lines)
 		indentBy := uint(math.Max(0, float64(termWidth/2-avgLineLen/2)))
 
 		s += m.indent(coloredStopwatch, indentBy) + "\n\n" + m.indent(linesAroundCursor, indentBy)
@@ -396,7 +395,7 @@ func (m model) View() string {
 
 		linesAroundCursor := strings.Join(getLinesAroundCursor(lines, cursorLine), "\n")
 
-		avgLineLen := averageLineLen(lines)
+		avgLineLen := averageLineLenFast(lines)
 		indentBy := uint(math.Max(0, float64(termWidth/2-avgLineLen/2)))
 
 		s += positionVerticaly(termHeight)
@@ -422,7 +421,7 @@ func (m model) View() string {
 		linesAroundCursor := strings.Join(getLinesAroundCursor(lines, cursorLine), "\n")
 
 		s += positionVerticaly(termHeight)
-		avgLineLen := averageLineLen(lines)
+		avgLineLen := averageLineLenFast(lines)
 		indentBy := uint(math.Max(0, float64(termWidth/2-avgLineLen/2)))
 
 		s += m.indent(coloredTimer, indentBy) + "\n\n" + m.indent(linesAroundCursor, indentBy)
@@ -447,7 +446,7 @@ func (m model) View() string {
 		linesAroundCursor := strings.Join(getLinesAroundCursor(lines, cursorLine), "\n")
 
 		s += positionVerticaly(termHeight)
-		avgLineLen := averageLineLen(lines)
+		avgLineLen := averageLineLenFast(lines)
 		indentBy := uint(math.Max(0, float64(termWidth/2-avgLineLen/2)))
 
 		s += m.indent(coloredStopwatch, indentBy) + "\n\n" + m.indent(linesAroundCursor, indentBy)
@@ -471,7 +470,7 @@ func (m model) View() string {
 
 		linesAroundCursor := strings.Join(getLinesAroundCursor(lines, cursorLine), "\n")
 
-		avgLineLen := averageLineLen(lines)
+		avgLineLen := averageLineLenFast(lines)
 		indentBy := uint(math.Max(0, float64(termWidth/2-avgLineLen/2)))
 
 		s += positionVerticaly(termHeight)
@@ -518,20 +517,6 @@ func plotWpms(wpms []float64, width int) string {
 	return lipgloss.NewStyle().Padding(1).Render(wpmGraph)
 }
 
-func averageLineLenFast(lines []string) int {
-	linesLen := len(lines)
-	linesToConsider := int(math.Min(float64(linesLen), 3))
-	return averageStringLen(lines[:linesToConsider])
-}
-
-func averageLineLen(lines []string) int {
-	linesLen := len(lines)
-	if linesLen > 1 {
-		lines = lines[:linesLen-1] //Drop last line, as it might skew up average length
-	}
-
-	return averageStringLen(lines)
-}
 
 func (selection TimerBasedTestSettings) show(styles Styles) string {
 	var wordListSelection string
@@ -702,7 +687,7 @@ func findCursorLine(lines []string, cursorAt int) int {
 	cursorLine := 0
 
 	for _, line := range lines {
-		lineLen := utf8.RuneCountInString(dropAnsiCodes(line))
+		lineLen := runeCountIgnoringAnsi(line)
 
 		lenAcc += lineLen
 

@@ -5,3 +5,7 @@
 ## 2026-03-04 - [Batch styling in TUI render loop]
 **Learning:** In TUI applications, styling text character-by-character (e.g., applying a foreground color to each rune individually) is extremely inefficient. It results in $O(N)$ sets of ANSI escape sequences, significantly bloating the output string size and increasing terminal parsing overhead.
 **Action:** Always batch style text wherever possible. Converting a slice of runes to a string and styling the entire string at once can improve performance by orders of magnitude (~98% in this case) and reduce the ANSI payload.
+
+## 2026-03-05 - [Optimize TUI rendering by reducing ANSI processing and using O(1) heuristics]
+**Learning:** In performance-critical TUI render loops, stripping ANSI codes via regex to calculate string length is expensive due to frequent allocations and regex overhead. Additionally, calculating metrics like average line length over a large text block in every `View` call is $O(N)$ where $N$ is the number of lines.
+**Action:** Implement manual rune counting that skips ANSI CSI sequences (terminating on 0x40-0x7E) to avoid allocations. Use $O(1)$ heuristics (like averaging only the first 3 lines) for layout centering in the `View` loop.

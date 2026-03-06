@@ -32,7 +32,7 @@ func averageStringLen(strings []string) int {
 	var cnt int = 0
 
 	for _, str := range strings {
-		currentLen := utf8.RuneCountInString(dropAnsiCodes(str))
+		currentLen := runeCountIgnoringAnsi(str)
 		totalLen += currentLen
 		cnt += 1
 	}
@@ -42,6 +42,47 @@ func averageStringLen(strings []string) int {
 	}
 
 	return totalLen / cnt
+}
+
+func averageLineLenFast(lines []string) int {
+	linesLen := len(lines)
+	linesToConsider := int(math.Min(float64(linesLen), 3))
+	return averageStringLen(lines[:linesToConsider])
+}
+
+func averageLineLen(lines []string) int {
+	linesLen := len(lines)
+	if linesLen > 1 {
+		lines = lines[:linesLen-1] //Drop last line, as it might skew up average length
+	}
+
+	return averageStringLen(lines)
+}
+
+// runeCountIgnoringAnsi counts the number of runes in a string while skipping
+// ANSI escape sequences (CSI). This is more efficient than stripping ANSI codes
+// and then counting runes because it avoids unnecessary string allocations.
+func runeCountIgnoringAnsi(s string) int {
+	count := 0
+	lenS := len(s)
+	for i := 0; i < lenS; {
+		if s[i] == '\x1b' && i+1 < lenS && s[i+1] == '[' {
+			i += 2
+			// Skip CSI sequence: parameter bytes, intermediate bytes, and a final byte (0x40–0x7E)
+			for i < lenS {
+				b := s[i]
+				i++
+				if b >= 0x40 && b <= 0x7E {
+					break
+				}
+			}
+			continue
+		}
+		_, size := utf8.DecodeRuneInString(s[i:])
+		count++
+		i += size
+	}
+	return count
 }
 
 func floor(value int) int32 {
