@@ -13,3 +13,7 @@
 ## 2026-03-06 - [Avoid unnecessary type conversions in Go 1.21+ logic]
 **Learning:** Using `math.Max` or `math.Min` for integer clipping/clamping in Go requires casting to and from `float64`, which is clunky and slightly less efficient than using the built-in `max()` and `min()` functions introduced in Go 1.21. For generating repetitive terminal sequences like newlines, `strings.Repeat` is also more efficient than manual loops.
 **Action:** Use built-in `max()`/`min()` for integer-based logic in projects using Go 1.21+. Use `strings.Repeat` for simple repetitive string generation.
+
+## 2026-03-07 - [Cache complex TUI rendering components]
+**Learning:** In a TUI render loop, operations like text wrapping and multi-step styling (e.g., coloring individual mistakes) are $O(N)$ and can be expensive when performed 60+ times per second. Capping these operations with a simple state-based cache (checking input length, raw keystroke count, and window dimensions) can improve render function performance by multiple orders of magnitude.
+**Action:** Implement caching for any view components that require significant processing (like `paragraphView`) and only re-calculate them when the underlying state or layout parameters change.

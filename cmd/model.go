@@ -174,6 +174,12 @@ type TestBase struct {
 	rawInputCnt   int // Should not be reduced
 	mistakes      mistakes
 	cursor        int
+
+	// Cached paragraph for performance, avoids redundant wrapping and styling
+	cachedParagraph  string
+	cacheInputLen    int
+	cacheRawInputCnt int
+	cacheLineLimit   int
 }
 
 type TimerBasedTest struct {
