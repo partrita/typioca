@@ -160,12 +160,12 @@ func TestKoreanContentGenerationInTimerTests(t *testing.T) {
 			
 			if tt.expectKorean && !hasKorean {
 				t.Errorf("Expected Korean content for %s, but Korean characters not detected in: %s", 
-					tt.generatorKey, contentStr[:minInt(50, len(contentStr))])
+					tt.generatorKey, contentStr[:min(50, len(contentStr))])
 			}
 			
 			if !tt.expectKorean && hasKorean {
 				t.Errorf("Expected non-Korean content for %s, but Korean characters detected in: %s", 
-					tt.generatorKey, contentStr[:minInt(50, len(contentStr))])
+					tt.generatorKey, contentStr[:min(50, len(contentStr))])
 			}
 		})
 	}
@@ -390,7 +390,7 @@ func TestKoreanDisplayIntegrationScenarios(t *testing.T) {
 				contentStr := string(test.base.wordsToEnter)
 				if !detectKoreanContent(contentStr) {
 					t.Errorf("Korean display issue: No Korean characters detected in content for %s: %s", 
-						selection.name, contentStr[:minInt(50, len(contentStr))])
+						selection.name, contentStr[:min(50, len(contentStr))])
 				}
 				
 				// Verify content is suitable for typing practice
@@ -427,7 +427,7 @@ func TestKoreanDisplayIntegrationScenarios(t *testing.T) {
 			contentStr := string(result.Content)
 			if !detectKoreanContent(contentStr) {
 				t.Errorf("Korean integration issue: Generated content lacks Korean characters: %s", 
-					contentStr[:minInt(50, len(contentStr))])
+					contentStr[:min(50, len(contentStr))])
 			}
 		}
 	})
@@ -538,12 +538,4 @@ func TestKoreanDisplayRobustness(t *testing.T) {
 			t.Error("Panic recovery content should be marked as validated")
 		}
 	})
-}
-
-// Helper function for minimum calculation (renamed to avoid conflict)
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }

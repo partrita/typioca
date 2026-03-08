@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"math"
 	"unicode/utf8"
 )
 
@@ -46,7 +45,7 @@ func averageStringLen(strings []string) int {
 
 func averageLineLenFast(lines []string) int {
 	linesLen := len(lines)
-	linesToConsider := int(math.Min(float64(linesLen), 3))
+	linesToConsider := min(linesLen, 3)
 	return averageStringLen(lines[:linesToConsider])
 }
 
@@ -86,7 +85,7 @@ func runeCountIgnoringAnsi(s string) int {
 }
 
 func floor(value int) int32 {
-	return int32(math.Max(0, float64(value)))
+	return int32(max(0, value))
 }
 
 func dropLastString(strings []string) []string {
@@ -108,7 +107,7 @@ func dropLastRune(runes []rune) []rune {
 }
 
 func toKeysSlice(mp map[int]bool) []int {
-	acc := []int{}
+	acc := make([]int, 0, len(mp))
 	for key := range mp {
 		acc = append(acc, key)
 	}

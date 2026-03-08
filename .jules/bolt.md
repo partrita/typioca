@@ -13,3 +13,7 @@
 ## 2026-03-06 - [Avoid unnecessary type conversions in Go 1.21+ logic]
 **Learning:** Using `math.Max` or `math.Min` for integer clipping/clamping in Go requires casting to and from `float64`, which is clunky and slightly less efficient than using the built-in `max()` and `min()` functions introduced in Go 1.21. For generating repetitive terminal sequences like newlines, `strings.Repeat` is also more efficient than manual loops.
 **Action:** Use built-in `max()`/`min()` for integer-based logic in projects using Go 1.21+. Use `strings.Repeat` for simple repetitive string generation.
+
+## 2026-03-08 - [Optimize hot render path with early returns and pre-allocation]
+**Learning:** In typing applications, the "perfect path" (zero mistakes) is common and should be optimized with an early return to avoid unnecessary map iterations, slice allocations, and sorting in `colorInput`. Additionally, pre-allocating slices with `make([]T, 0, len(m))` when converting maps to slices in performance-critical paths avoids repeated reallocations.
+**Action:** Implement early returns for mistake-free typing in `colorInput`. Pre-allocate the mistakes slice in `toKeysSlice`. Use built-in `min`/`max` to avoid `float64` conversion overhead in rendering logic.

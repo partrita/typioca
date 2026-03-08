@@ -236,14 +236,6 @@ func readTextWordList(filePath string) ([]string, error) {
 	return words, scanner.Err()
 }
 
-// min returns the minimum of two integers
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 func githubWordsURI(fileName string) string {
 	return fmt.Sprintf("%s%s",
 		"https://raw.githubusercontent.com/bloznelis/typioca/master/words/storage/words/",

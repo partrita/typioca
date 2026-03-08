@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"math"
 	"strings"
 )
 
@@ -87,7 +86,7 @@ func (m SentenceCountBasedTest) calculateResults() Results {
 func calculateAverageWpmDeltaPercentage(wpm float64, previousResults []PersistentResultsNode) float64 {
 	previousAvg := calcPreviousResultsAvgWpm(previousResults)
 
-	return ((wpm - previousAvg) / math.Max(1.0, previousAvg)) * 100
+	return ((wpm - previousAvg) / max(1.0, previousAvg)) * 100
 }
 
 func calcPreviousResultsAvgWpm(previousResults []PersistentResultsNode) float64 {
@@ -117,7 +116,7 @@ func (base TestBase) calculateWpm(wordCnt int, elapsedMinutes float64) float64 {
 		grossWpm := float64(wordCnt) / elapsedMinutes
 		netWpm := grossWpm - float64(len(base.mistakes.mistakesAt))/elapsedMinutes
 
-		return math.Max(0, netWpm)
+		return max(0, netWpm)
 	}
 }
 

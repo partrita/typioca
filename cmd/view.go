@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"math"
 	"regexp"
 	"sort"
 	"strconv"
@@ -47,8 +46,8 @@ func renderSelectionWindow[T any](
 ) string {
 	internalCursorPos := cursor - prevSelectionAmt
 	total := len(selections)
-	upperInc := int(math.Min(math.Max(float64(maxAmtToShow), float64(internalCursorPos)), float64(total-1)))
-	lowerInc := int(math.Max(float64(upperInc-maxAmtToShow), float64(0)))
+	upperInc := min(max(maxAmtToShow, internalCursorPos), total-1)
+	lowerInc := max(upperInc-maxAmtToShow, 0)
 	var view string
 
 	cursorWidget := fmt.Sprintf("  [%d-%d:%d]", lowerInc+1, upperInc+1, total)
@@ -69,7 +68,7 @@ func (m model) View() string {
 	termWidth, termHeight := m.width, m.height
 
 	reactiveLimit := (termWidth * 6) / 10
-	lineLenLimit = int(math.Min(float64(maxLineLen), math.Max(float64(minLineLen), float64(reactiveLimit))))
+	lineLenLimit = min(maxLineLen, max(minLineLen, reactiveLimit))
 
 	switch state := m.state.(type) {
 	case MainMenu:
@@ -220,7 +219,7 @@ func (m model) View() string {
 	case TimerBasedTestResults:
 		rawWpmShow := "raw: " + style(strconv.Itoa(state.results.rawWpm), m.styles.greener)
 		wpm := "wpm: " + style(strconv.Itoa(state.results.wpm), m.styles.runningTimer)
-		deltaWpm := "Δavg: " + style(fmt.Sprintf("%s%.2f%%", plusIfPositive(state.results.deltaWpm), math.Min(state.results.deltaWpm, 100.0)), m.styles.greener)
+		deltaWpm := "Δavg: " + style(fmt.Sprintf("%s%.2f%%", plusIfPositive(state.results.deltaWpm), min(state.results.deltaWpm, 100.0)), m.styles.greener)
 		givenTime := "time: " + style(state.results.time.String(), m.styles.greener)
 		accuracy := "accuracy: " + style(fmt.Sprintf("%.1f", state.results.accuracy), m.styles.greener)
 		words := "words: " + style(state.results.wordList, m.styles.greener)
@@ -238,7 +237,7 @@ func (m model) View() string {
 	case WordCountTestResults:
 		rawWpmShow := "raw: " + style(strconv.Itoa(state.results.rawWpm), m.styles.greener)
 		wpm := "wpm: " + style(strconv.Itoa(state.results.wpm), m.styles.runningTimer)
-		deltaWpm := "Δavg: " + style(fmt.Sprintf("%s%.2f%%", plusIfPositive(state.results.deltaWpm), math.Min(state.results.deltaWpm, 100.0)), m.styles.greener)
+		deltaWpm := "Δavg: " + style(fmt.Sprintf("%s%.2f%%", plusIfPositive(state.results.deltaWpm), min(state.results.deltaWpm, 100.0)), m.styles.greener)
 		givenTime := "time: " + style(state.results.time.String(), m.styles.greener)
 		wordCnt := "cnt: " + style(strconv.Itoa(state.wordCnt), m.styles.greener)
 		accuracy := "accuracy: " + style(fmt.Sprintf("%.1f", state.results.accuracy), m.styles.greener)
@@ -258,7 +257,7 @@ func (m model) View() string {
 	case SentenceCountTestResults:
 		rawWpmShow := "raw: " + style(strconv.Itoa(state.results.rawWpm), m.styles.greener)
 		wpm := "wpm: " + style(strconv.Itoa(state.results.wpm), m.styles.runningTimer)
-		deltaWpm := "Δavg: " + style(fmt.Sprintf("%s%.2f%%", plusIfPositive(state.results.deltaWpm), math.Min(state.results.deltaWpm, 100.0)), m.styles.greener)
+		deltaWpm := "Δavg: " + style(fmt.Sprintf("%s%.2f%%", plusIfPositive(state.results.deltaWpm), min(state.results.deltaWpm, 100.0)), m.styles.greener)
 		givenTime := "time: " + style(state.results.time.String(), m.styles.greener)
 		sentenceCnt := "cnt: " + style(strconv.Itoa(state.sentenceCnt), m.styles.greener)
 		accuracy := "accuracy: " + style(fmt.Sprintf("%.1f", state.results.accuracy), m.styles.greener)
@@ -277,7 +276,7 @@ func (m model) View() string {
 	case KoreanTimerBasedTestResults:
 		rawWpmShow := "raw: " + style(strconv.Itoa(state.results.rawWpm), m.styles.greener)
 		wpm := "wpm: " + style(strconv.Itoa(state.results.wpm), m.styles.runningTimer)
-		deltaWpm := "Δavg: " + style(fmt.Sprintf("%s%.2f%%", plusIfPositive(state.results.deltaWpm), math.Min(state.results.deltaWpm, 100.0)), m.styles.greener)
+		deltaWpm := "Δavg: " + style(fmt.Sprintf("%s%.2f%%", plusIfPositive(state.results.deltaWpm), min(state.results.deltaWpm, 100.0)), m.styles.greener)
 		givenTime := "time: " + style(state.results.time.String(), m.styles.greener)
 		accuracy := "accuracy: " + style(fmt.Sprintf("%.1f", state.results.accuracy), m.styles.greener)
 		words := "words: " + style(state.results.wordList, m.styles.greener)
@@ -295,7 +294,7 @@ func (m model) View() string {
 	case KoreanWordCountTestResults:
 		rawWpmShow := "raw: " + style(strconv.Itoa(state.results.rawWpm), m.styles.greener)
 		wpm := "wpm: " + style(strconv.Itoa(state.results.wpm), m.styles.runningTimer)
-		deltaWpm := "Δavg: " + style(fmt.Sprintf("%s%.2f%%", plusIfPositive(state.results.deltaWpm), math.Min(state.results.deltaWpm, 100.0)), m.styles.greener)
+		deltaWpm := "Δavg: " + style(fmt.Sprintf("%s%.2f%%", plusIfPositive(state.results.deltaWpm), min(state.results.deltaWpm, 100.0)), m.styles.greener)
 		givenTime := "time: " + style(state.results.time.String(), m.styles.greener)
 		wordCnt := "cnt: " + style(strconv.Itoa(state.wordCnt), m.styles.greener)
 		accuracy := "accuracy: " + style(fmt.Sprintf("%.1f", state.results.accuracy), m.styles.greener)
@@ -315,7 +314,7 @@ func (m model) View() string {
 	case KoreanSentenceCountTestResults:
 		rawWpmShow := "raw: " + style(strconv.Itoa(state.results.rawWpm), m.styles.greener)
 		wpm := "wpm: " + style(strconv.Itoa(state.results.wpm), m.styles.runningTimer)
-		deltaWpm := "Δavg: " + style(fmt.Sprintf("%s%.2f%%", plusIfPositive(state.results.deltaWpm), math.Min(state.results.deltaWpm, 100.0)), m.styles.greener)
+		deltaWpm := "Δavg: " + style(fmt.Sprintf("%s%.2f%%", plusIfPositive(state.results.deltaWpm), min(state.results.deltaWpm, 100.0)), m.styles.greener)
 		givenTime := "time: " + style(state.results.time.String(), m.styles.greener)
 		sentenceCnt := "cnt: " + style(strconv.Itoa(state.sentenceCnt), m.styles.greener)
 		accuracy := "accuracy: " + style(fmt.Sprintf("%.1f", state.results.accuracy), m.styles.greener)
@@ -347,7 +346,7 @@ func (m model) View() string {
 
 		s += positionVerticaly(termHeight)
 		avgLineLen := averageLineLenFast(lines)
-		indentBy := uint(math.Max(0, float64(termWidth/2-avgLineLen/2)))
+		indentBy := uint(max(0, termWidth/2-avgLineLen/2))
 
 		s += m.indent(coloredTimer, indentBy) + "\n\n" + m.indent(linesAroundCursor, indentBy)
 
@@ -372,7 +371,7 @@ func (m model) View() string {
 
 		s += positionVerticaly(termHeight)
 		avgLineLen := averageLineLenFast(lines)
-		indentBy := uint(math.Max(0, float64(termWidth/2-avgLineLen/2)))
+		indentBy := uint(max(0, termWidth/2-avgLineLen/2))
 
 		s += m.indent(coloredStopwatch, indentBy) + "\n\n" + m.indent(linesAroundCursor, indentBy)
 
@@ -396,7 +395,7 @@ func (m model) View() string {
 		linesAroundCursor := strings.Join(getLinesAroundCursor(lines, cursorLine), "\n")
 
 		avgLineLen := averageLineLenFast(lines)
-		indentBy := uint(math.Max(0, float64(termWidth/2-avgLineLen/2)))
+		indentBy := uint(max(0, termWidth/2-avgLineLen/2))
 
 		s += positionVerticaly(termHeight)
 		s += m.indent(coloredStopwatch, indentBy) + "\n\n" + m.indent(linesAroundCursor, indentBy)
@@ -422,7 +421,7 @@ func (m model) View() string {
 
 		s += positionVerticaly(termHeight)
 		avgLineLen := averageLineLenFast(lines)
-		indentBy := uint(math.Max(0, float64(termWidth/2-avgLineLen/2)))
+		indentBy := uint(max(0, termWidth/2-avgLineLen/2))
 
 		s += m.indent(coloredTimer, indentBy) + "\n\n" + m.indent(linesAroundCursor, indentBy)
 
@@ -447,7 +446,7 @@ func (m model) View() string {
 
 		s += positionVerticaly(termHeight)
 		avgLineLen := averageLineLenFast(lines)
-		indentBy := uint(math.Max(0, float64(termWidth/2-avgLineLen/2)))
+		indentBy := uint(max(0, termWidth/2-avgLineLen/2))
 
 		s += m.indent(coloredStopwatch, indentBy) + "\n\n" + m.indent(linesAroundCursor, indentBy)
 
@@ -471,7 +470,7 @@ func (m model) View() string {
 		linesAroundCursor := strings.Join(getLinesAroundCursor(lines, cursorLine), "\n")
 
 		avgLineLen := averageLineLenFast(lines)
-		indentBy := uint(math.Max(0, float64(termWidth/2-avgLineLen/2)))
+		indentBy := uint(max(0, termWidth/2-avgLineLen/2))
 
 		s += positionVerticaly(termHeight)
 		s += m.indent(coloredStopwatch, indentBy) + "\n\n" + m.indent(linesAroundCursor, indentBy)
@@ -590,8 +589,8 @@ func getLinesAroundCursor(lines []string, cursorLine int) []string {
 		cursor += 2
 	}
 
-	low := int(math.Max(0, float64(cursorLine-1)))
-	high := int(math.Min(float64(len(lines)), float64(cursor)))
+	low := max(0, cursorLine-1)
+	high := min(len(lines), cursor)
 
 	return lines[low:high]
 }
@@ -619,44 +618,49 @@ func (base *TestBase) paragraphView(lineLimit int, styles Styles) string {
 }
 
 func (base *TestBase) colorInput(styles Styles) string {
+	if len(base.mistakes.mistakesAt) == 0 {
+		return styleAllRunes(base.inputBuffer, styles.correct)
+	}
+
 	mistakes := toKeysSlice(base.mistakes.mistakesAt)
 	sort.Ints(mistakes)
 
 	var coloredInput strings.Builder
 
-	if len(mistakes) == 0 {
+	previousMistake := -1
 
-		coloredInput.WriteString(styleAllRunes(base.inputBuffer, styles.correct))
+	for _, mistakeAt := range mistakes {
+		sliceUntilMistake := base.inputBuffer[previousMistake+1 : mistakeAt]
+		mistakeSlice := base.wordsToEnter[mistakeAt : mistakeAt+1]
 
-	} else {
+		coloredInput.WriteString(styleAllRunes(sliceUntilMistake, styles.correct))
+		coloredInput.WriteString(style(string(mistakeSlice), styles.mistakes))
 
-		previousMistake := -1
-
-		for _, mistakeAt := range mistakes {
-			sliceUntilMistake := base.inputBuffer[previousMistake+1 : mistakeAt]
-			mistakeSlice := base.wordsToEnter[mistakeAt : mistakeAt+1]
-
-			coloredInput.WriteString(styleAllRunes(sliceUntilMistake, styles.correct))
-			coloredInput.WriteString(style(string(mistakeSlice), styles.mistakes))
-
-			previousMistake = mistakeAt
-		}
-
-		inputAfterLastMistake := base.inputBuffer[previousMistake+1:]
-		coloredInput.WriteString(styleAllRunes(inputAfterLastMistake, styles.correct))
+		previousMistake = mistakeAt
 	}
+
+	inputAfterLastMistake := base.inputBuffer[previousMistake+1:]
+	coloredInput.WriteString(styleAllRunes(inputAfterLastMistake, styles.correct))
 
 	return coloredInput.String()
 }
 
 func (base *TestBase) colorCursor(styles Styles) string {
-	cursorLetter := base.wordsToEnter[len(base.inputBuffer) : len(base.inputBuffer)+1]
+	inputLen := len(base.inputBuffer)
+	if inputLen >= len(base.wordsToEnter) {
+		return ""
+	}
+	cursorLetter := base.wordsToEnter[inputLen : inputLen+1]
 
 	return style(string(cursorLetter), styles.cursor)
 }
 
 func (base *TestBase) colorWordsToEnter(styles Styles) string {
-	wordsToEnter := base.wordsToEnter[len(base.inputBuffer)+1:] // without cursor
+	inputLen := len(base.inputBuffer)
+	if inputLen+1 >= len(base.wordsToEnter) {
+		return ""
+	}
+	wordsToEnter := base.wordsToEnter[inputLen+1:] // without cursor
 
 	return style(string(wordsToEnter), styles.toEnter)
 }
