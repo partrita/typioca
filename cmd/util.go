@@ -108,7 +108,7 @@ func dropLastRune(runes []rune) []rune {
 }
 
 func toKeysSlice(mp map[int]bool) []int {
-	acc := []int{}
+	acc := make([]int, 0, len(mp))
 	for key := range mp {
 		acc = append(acc, key)
 	}

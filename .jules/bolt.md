@@ -13,3 +13,7 @@
 ## 2026-03-06 - [Avoid unnecessary type conversions in Go 1.21+ logic]
 **Learning:** Using `math.Max` or `math.Min` for integer clipping/clamping in Go requires casting to and from `float64`, which is clunky and slightly less efficient than using the built-in `max()` and `min()` functions introduced in Go 1.21. For generating repetitive terminal sequences like newlines, `strings.Repeat` is also more efficient than manual loops.
 **Action:** Use built-in `max()`/`min()` for integer-based logic in projects using Go 1.21+. Use `strings.Repeat` for simple repetitive string generation.
+
+## 2026-03-09 - [Pre-allocate slices for map-to-slice conversions]
+**Learning:** Converting a map to a slice (e.g., extracting keys) without pre-allocating the slice results in multiple memory reallocations as the slice grows. In performance-critical paths like TUI rendering, these reallocations add up and increase GC pressure.
+**Action:** Always pre-allocate slices with `make([]T, 0, len(m))` when converting maps to slices to ensure only a single allocation occurs.
