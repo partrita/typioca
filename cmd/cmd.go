@@ -11,9 +11,6 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/ssh"
-	"github.com/charmbracelet/wish"
-	bm "github.com/charmbracelet/wish/bubbletea"
-	lm "github.com/charmbracelet/wish/logging"
 	"github.com/muesli/termenv"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -59,32 +56,16 @@ var (
 		Short: "Serve the typioca server",
 		Long:  "serve starts the typioca SSH server.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			s, err := wish.NewServer(
-				wish.WithAddress(fmt.Sprintf("%s:%d", serverBind, serverPort)),
-				wish.WithHostKeyPath(serverKeyPath),
-				wish.WithMiddleware(
-					lm.Middleware(),
-					bm.Middleware(
-						func(s ssh.Session) (tea.Model, []tea.ProgramOption) {
-							pty, _, active := s.Pty()
+			if err := ensureHostKey(serverKeyPath); err != nil {
+				return err
+			}
 
-							if !active {
-								wish.Fatal(s, fmt.Errorf("not a tty"))
-								return nil, nil
-							}
+			s := &ssh.Server{
+				Addr:    fmt.Sprintf("%s:%d", serverBind, serverPort),
+				Handler: serveSession,
+			}
 
-							return initialModel(
-									termenv.ANSI256,
-									termenv.ANSIWhite,
-									pty.Window.Width,
-									pty.Window.Height,
-								),
-								[]tea.ProgramOption{tea.WithAltScreen()}
-						}),
-				),
-			)
-
-			if err != nil {
+			if err := s.SetOption(ssh.HostKeyFile(serverKeyPath)); err != nil {
 				return err
 			}
 
