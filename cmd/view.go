@@ -219,7 +219,7 @@ func (m model) View() string {
 	case TimerBasedTestResults:
 		rawWpmShow := "raw: " + style(strconv.Itoa(state.results.rawWpm), m.styles.greener)
 		wpm := "wpm: " + style(strconv.Itoa(state.results.wpm), m.styles.runningTimer)
-		deltaWpm := "Δavg: " + style(fmt.Sprintf("%s%.2f%%", plusIfPositive(state.results.deltaWpm), min(state.results.deltaWpm, 100.0)), m.styles.greener)
+		deltaWpm := formatDeltaWpm(state.results.deltaWpm, m.styles)
 		givenTime := "time: " + style(state.results.time.String(), m.styles.greener)
 		accuracy := "accuracy: " + style(fmt.Sprintf("%.1f", state.results.accuracy), m.styles.greener)
 		words := "words: " + style(state.results.wordList, m.styles.greener)
@@ -237,7 +237,7 @@ func (m model) View() string {
 	case WordCountTestResults:
 		rawWpmShow := "raw: " + style(strconv.Itoa(state.results.rawWpm), m.styles.greener)
 		wpm := "wpm: " + style(strconv.Itoa(state.results.wpm), m.styles.runningTimer)
-		deltaWpm := "Δavg: " + style(fmt.Sprintf("%s%.2f%%", plusIfPositive(state.results.deltaWpm), min(state.results.deltaWpm, 100.0)), m.styles.greener)
+		deltaWpm := formatDeltaWpm(state.results.deltaWpm, m.styles)
 		givenTime := "time: " + style(state.results.time.String(), m.styles.greener)
 		wordCnt := "cnt: " + style(strconv.Itoa(state.wordCnt), m.styles.greener)
 		accuracy := "accuracy: " + style(fmt.Sprintf("%.1f", state.results.accuracy), m.styles.greener)
@@ -257,7 +257,7 @@ func (m model) View() string {
 	case SentenceCountTestResults:
 		rawWpmShow := "raw: " + style(strconv.Itoa(state.results.rawWpm), m.styles.greener)
 		wpm := "wpm: " + style(strconv.Itoa(state.results.wpm), m.styles.runningTimer)
-		deltaWpm := "Δavg: " + style(fmt.Sprintf("%s%.2f%%", plusIfPositive(state.results.deltaWpm), min(state.results.deltaWpm, 100.0)), m.styles.greener)
+		deltaWpm := formatDeltaWpm(state.results.deltaWpm, m.styles)
 		givenTime := "time: " + style(state.results.time.String(), m.styles.greener)
 		sentenceCnt := "cnt: " + style(strconv.Itoa(state.sentenceCnt), m.styles.greener)
 		accuracy := "accuracy: " + style(fmt.Sprintf("%.1f", state.results.accuracy), m.styles.greener)
@@ -276,7 +276,7 @@ func (m model) View() string {
 	case KoreanTimerBasedTestResults:
 		rawWpmShow := "raw: " + style(strconv.Itoa(state.results.rawWpm), m.styles.greener)
 		wpm := "wpm: " + style(strconv.Itoa(state.results.wpm), m.styles.runningTimer)
-		deltaWpm := "Δavg: " + style(fmt.Sprintf("%s%.2f%%", plusIfPositive(state.results.deltaWpm), min(state.results.deltaWpm, 100.0)), m.styles.greener)
+		deltaWpm := formatDeltaWpm(state.results.deltaWpm, m.styles)
 		givenTime := "time: " + style(state.results.time.String(), m.styles.greener)
 		accuracy := "accuracy: " + style(fmt.Sprintf("%.1f", state.results.accuracy), m.styles.greener)
 		words := "words: " + style(state.results.wordList, m.styles.greener)
@@ -294,7 +294,7 @@ func (m model) View() string {
 	case KoreanWordCountTestResults:
 		rawWpmShow := "raw: " + style(strconv.Itoa(state.results.rawWpm), m.styles.greener)
 		wpm := "wpm: " + style(strconv.Itoa(state.results.wpm), m.styles.runningTimer)
-		deltaWpm := "Δavg: " + style(fmt.Sprintf("%s%.2f%%", plusIfPositive(state.results.deltaWpm), min(state.results.deltaWpm, 100.0)), m.styles.greener)
+		deltaWpm := formatDeltaWpm(state.results.deltaWpm, m.styles)
 		givenTime := "time: " + style(state.results.time.String(), m.styles.greener)
 		wordCnt := "cnt: " + style(strconv.Itoa(state.wordCnt), m.styles.greener)
 		accuracy := "accuracy: " + style(fmt.Sprintf("%.1f", state.results.accuracy), m.styles.greener)
@@ -314,7 +314,7 @@ func (m model) View() string {
 	case KoreanSentenceCountTestResults:
 		rawWpmShow := "raw: " + style(strconv.Itoa(state.results.rawWpm), m.styles.greener)
 		wpm := "wpm: " + style(strconv.Itoa(state.results.wpm), m.styles.runningTimer)
-		deltaWpm := "Δavg: " + style(fmt.Sprintf("%s%.2f%%", plusIfPositive(state.results.deltaWpm), min(state.results.deltaWpm, 100.0)), m.styles.greener)
+		deltaWpm := formatDeltaWpm(state.results.deltaWpm, m.styles)
 		givenTime := "time: " + style(state.results.time.String(), m.styles.greener)
 		sentenceCnt := "cnt: " + style(strconv.Itoa(state.sentenceCnt), m.styles.greener)
 		accuracy := "accuracy: " + style(fmt.Sprintf("%.1f", state.results.accuracy), m.styles.greener)
@@ -344,8 +344,8 @@ func (m model) View() string {
 
 		linesAroundCursor := strings.Join(getLinesAroundCursor(lines, cursorLine), "\n")
 
-		s += positionVerticaly(termHeight)
-		avgLineLen := averageLineLenFast(lines)
+		s += positionVertically(termHeight)
+		avgLineLen := averageLineLen(lines)
 		indentBy := uint(max(0, termWidth/2-avgLineLen/2))
 
 		s += m.indent(coloredTimer, indentBy) + "\n\n" + m.indent(linesAroundCursor, indentBy)
@@ -369,8 +369,8 @@ func (m model) View() string {
 
 		linesAroundCursor := strings.Join(getLinesAroundCursor(lines, cursorLine), "\n")
 
-		s += positionVerticaly(termHeight)
-		avgLineLen := averageLineLenFast(lines)
+		s += positionVertically(termHeight)
+		avgLineLen := averageLineLen(lines)
 		indentBy := uint(max(0, termWidth/2-avgLineLen/2))
 
 		s += m.indent(coloredStopwatch, indentBy) + "\n\n" + m.indent(linesAroundCursor, indentBy)
@@ -394,10 +394,10 @@ func (m model) View() string {
 
 		linesAroundCursor := strings.Join(getLinesAroundCursor(lines, cursorLine), "\n")
 
-		avgLineLen := averageLineLenFast(lines)
+		avgLineLen := averageLineLen(lines)
 		indentBy := uint(max(0, termWidth/2-avgLineLen/2))
 
-		s += positionVerticaly(termHeight)
+		s += positionVertically(termHeight)
 		s += m.indent(coloredStopwatch, indentBy) + "\n\n" + m.indent(linesAroundCursor, indentBy)
 
 		if !state.stopwatch.isRunning {
@@ -419,8 +419,8 @@ func (m model) View() string {
 
 		linesAroundCursor := strings.Join(getLinesAroundCursor(lines, cursorLine), "\n")
 
-		s += positionVerticaly(termHeight)
-		avgLineLen := averageLineLenFast(lines)
+		s += positionVertically(termHeight)
+		avgLineLen := averageLineLen(lines)
 		indentBy := uint(max(0, termWidth/2-avgLineLen/2))
 
 		s += m.indent(coloredTimer, indentBy) + "\n\n" + m.indent(linesAroundCursor, indentBy)
@@ -444,8 +444,8 @@ func (m model) View() string {
 
 		linesAroundCursor := strings.Join(getLinesAroundCursor(lines, cursorLine), "\n")
 
-		s += positionVerticaly(termHeight)
-		avgLineLen := averageLineLenFast(lines)
+		s += positionVertically(termHeight)
+		avgLineLen := averageLineLen(lines)
 		indentBy := uint(max(0, termWidth/2-avgLineLen/2))
 
 		s += m.indent(coloredStopwatch, indentBy) + "\n\n" + m.indent(linesAroundCursor, indentBy)
@@ -469,10 +469,10 @@ func (m model) View() string {
 
 		linesAroundCursor := strings.Join(getLinesAroundCursor(lines, cursorLine), "\n")
 
-		avgLineLen := averageLineLenFast(lines)
+		avgLineLen := averageLineLen(lines)
 		indentBy := uint(max(0, termWidth/2-avgLineLen/2))
 
-		s += positionVerticaly(termHeight)
+		s += positionVertically(termHeight)
 		s += m.indent(coloredStopwatch, indentBy) + "\n\n" + m.indent(linesAroundCursor, indentBy)
 
 		if !state.stopwatch.isRunning {
@@ -485,6 +485,14 @@ func (m model) View() string {
 	return s
 }
 
+// formatDeltaWpm renders the change in average wpm against the previous result.
+// The value is clamped so a single outlier does not stretch the results line.
+func formatDeltaWpm(delta float64, styles Styles) string {
+	clamped := min(delta, 100.0)
+
+	return "Δavg: " + style(fmt.Sprintf("%s%.2f%%", plusIfPositive(delta), clamped), styles.greener)
+}
+
 func plusIfPositive(f float64) string {
 	if f > 0.0 {
 		return "+"
@@ -493,7 +501,7 @@ func plusIfPositive(f float64) string {
 	}
 }
 
-func positionVerticaly(termHeight int) string {
+func positionVertically(termHeight int) string {
 	return strings.Repeat("\n", max(0, termHeight/2-3))
 }
 
