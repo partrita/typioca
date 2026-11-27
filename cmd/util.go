@@ -44,19 +44,21 @@ func averageStringLen(strings []string) int {
 	return totalLen / cnt
 }
 
-func averageLineLenFast(lines []string) int {
-	linesLen := len(lines)
-	linesToConsider := int(math.Min(float64(linesLen), 3))
-	return averageStringLen(lines[:linesToConsider])
-}
-
+// averageLineLen returns the average display length of a wrapped paragraph so
+// the block can be centred. Only a few lines are considered to keep this cheap,
+// and the last line is dropped when there is more than one because a trailing
+// partial line would pull the average down and shift the text to the left.
 func averageLineLen(lines []string) int {
-	linesLen := len(lines)
-	if linesLen > 1 {
-		lines = lines[:linesLen-1] //Drop last line, as it might skew up average length
+	linesToConsider := len(lines)
+	if linesToConsider > 1 {
+		linesToConsider--
 	}
 
-	return averageStringLen(lines)
+	if linesToConsider > 3 {
+		linesToConsider = 3
+	}
+
+	return averageStringLen(lines[:linesToConsider])
 }
 
 // runeCountIgnoringAnsi counts the number of runes in a string while skipping
